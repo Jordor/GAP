@@ -1,0 +1,44 @@
+0. Prepocessing:
+Read CSV file: => return {list of cities, R: number of cities}
+Constants:
+    N: Initial pop size (TBD)
+    P_size: Population (TBD)
+P: population
+1. initialize_population()
+    generate N paths of size R
+    return N
+
+2. Until (TIME_LIMIT) do:
+    a. selection_k_tournament()
+        for (1 -> P.size):
+            temp[K] = select randomly K paths
+            calculate_fitness(temp)
+            select 1 best, add to P
+        return population P
+
+    b. variation():
+        O: Empty
+        #mutation (first?)
+        for (5% of P) p:
+            P.replace(p, mutate_path(p))
+
+        #cross-over
+        for 1->P/2:
+            select randomly 2 parents p1, p2
+            o1, o2 = cross_parents(p1, p2)
+            O.add(o1, o2)
+
+     c.  elimination:
+        A = P+O
+        calculate_fitness(A)
+        A = sort(A.fitness)
+        P = A[0;P_size]
+        list.append(best solution s)
+        best solution = if s > best solution
+        print(mean fitness of population)
+###
+Functions:
+    calculate_fitness(Path p): => return fitness
+    mutate_path(Path p) => Path
+    cross_parents(p1, p1) => Path
+

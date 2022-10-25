@@ -1,4 +1,4 @@
-Timport pandas as pd
+import pandas as pd
 import numpy as np
 
 MAP = pd.read_csv(r'C:\Users\zosia\OneDrive\Pulpit\MSC Bioinf Leuven\EA\EA - project\tour50.csv')
