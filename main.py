@@ -1,16 +1,20 @@
-# This is a sample Python script.
+Timport pandas as pd
+import numpy as np
 
-# Press Mayús+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+MAP = pd.read_csv(r'C:\Users\zosia\OneDrive\Pulpit\MSC Bioinf Leuven\EA\EA - project\tour50.csv')
+print(MAP)
+#nr of cities
+R = 49
 
+class Individual:
+    def __init__(self):
+        self.path
+        self.fintess
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def randomPath():
+    path = np.random.permutation(R)
 
+def fitness(indiv: Individual):
+    pass
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
