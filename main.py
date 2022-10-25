@@ -6,15 +6,34 @@ print(MAP)
 #nr of cities
 R = 49
 
-class Individual:
+class Path:
     def __init__(self):
-        self.path
+        self.cycle
         self.fintess
 
 def randomPath():
     path = np.random.permutation(R)
+    return path
 
-def fitness(indiv: Individual):
+def calculate_fitness(path: Path):
+    # update fitness value
     pass
+
+def mutate_path(path: Path):
+    #
+    pass
+
+def cross_parents():
+    pass
+
+def algorith():
+    # population list of paths
+
+    for p in population:
+        population[p] = mutate_path(p)
+
+    for i in range(0, len(population)\2):
+
+
 
 if __name__ == '__main__':
