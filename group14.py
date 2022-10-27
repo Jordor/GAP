@@ -1,7 +1,3 @@
-from inspect import _void
-from pickle import POP
-import random
-from select import select
 import Reporter
 import numpy as np
 
@@ -95,7 +91,7 @@ class group14:
             meanObjective = 0.0
             bestObjective = 0.0
             bestSolution = np.array([1, 2, 3, 4, 5])
-            
+
             population = selection_k_tournament(population, POP_SIZE)
             intemediate_pop = variation(population)
             population = eliminate(intemediate_pop, POP_SIZE)
