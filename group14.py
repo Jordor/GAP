@@ -129,7 +129,37 @@ def mutate_path(path: Path, num_mutations: int) -> Path:
 
 
 def crossover_parents(p1: Path, p2: Path) -> Path:
-    pass
+    """
+    :param p1: Path object of the first parent
+    :param p2: Path object of the second parent
+    :return: Offspring (one)
+
+    We should add a new parameter defining how big the crossover is in number of cities
+
+    1- obtain cycles from p1 and p2
+    2- select a random crossover index
+    3- pick a number of cities from that point to the right from p1
+    4- remove those cities from p2
+    5- insert p1 cities in the same order and the same position but in p2
+    """
+
+    c1  = p1.getcycle()
+    c2  = p2.getcycle()
+    L   = len(c1)
+    nn  = 10
+    r   = random.randint(0, L - nn)
+    nc  = c2[:] # copy c2 for new cycle
+
+    cross = c1[r:r+nn]
+
+    for i in cross:
+        # remove from nc
+
+    nc.append(cross)
+    np = Path()
+    np.setcycle(nc)
+
+    return np
 
 
 def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
@@ -190,7 +220,7 @@ def variation(population: np.ndarray) -> None:
 
     offspring = []
     for i in range(POP_SIZE):
-        # how to choose 2 parents?,for now it's random
+        # how to choose 2 parents?,for now it's random # Jordi: we will implement some selective pressure later, for now let's keep it simple
         p1, p2 = select_2_parents(mutate_population)
         offspring.append(crossover_parents(p1, p2))
     return np.concatenate(mutated_population, offspring)
