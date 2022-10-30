@@ -4,10 +4,11 @@ import Reporter
 import numpy as np
 
 # TBD
-TIME_LIMIT = 5 * 60  # in seconds
+TIME_LIMIT = 5 * 60  # in seconds?
 K_TOURNAMENT = 5  # Number of candidates in the tournament
-POP_SIZE = 20  # Population size
-MUTATION_RATE = 0.4
+POP_SIZE = 100  # Population size
+MUTATION_RATE = 5  # percent mutation rate
+NUM_MUTATIONS = 5
 
 
 class Path:
@@ -41,6 +42,9 @@ class CSVdata:
 
     def getdistance(self, city_a, city_b) -> float:
         return self.distances[city_a][city_b]
+
+    def numcities(self) -> int:
+        return self.distances.shape[0]
 
 
 def randomPath(path_size: int) -> Path:
@@ -182,7 +186,7 @@ def select_2_parents(pop: np.ndarray):
 
 
 def variation(population: np.ndarray) -> None:
-    mutated_population = mutate_population(population, MUTATION_RATE)
+    mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
 
     offspring = []
     for i in range(POP_SIZE):
@@ -200,7 +204,7 @@ class group14:
     def __init__(self):
         self.file = ''
         self.reporter = Reporter.Reporter(self.__class__.__name__)
-        self.CSV = CSVdata()
+        self.CSV = CSVdata()  # this object can return distances
 
     # The evolutionary algorithm ’s main loop
 
@@ -213,7 +217,7 @@ class group14:
         yourConvergenceTestsHere = True
 
         # initialize the population
-        n_city = distanceMatrix.shape[0]
+        n_city = CSVdata.numcities()
         population = initialize_population(n_city)
 
         while (yourConvergenceTestsHere):
