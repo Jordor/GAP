@@ -10,8 +10,6 @@ POP_SIZE = 20  # Population size
 MUTATION_RATE = 0.4
 
 
-# Need to add the data contained in the CSV somewhere
-
 class Path:
     def __init__(self):
         self.cycle
@@ -28,15 +26,18 @@ class Path:
 
 class CSVdata:
 
-    def __init__(self, csv_file):
+    def __init__(self):
         """
         1- open csv file
         2- import the distance matrix as distances[][]
         3- implement a method for retrieving the distances according to city index
-
-        :param csv_file: path to the file to open
         """
-        self.distances
+        self.distances = []
+
+    def load_distances(self, csv_file):
+        file = open(csv_file)
+        self.distances = np.loadtxt(file, delimiter=",")
+        file.close()
 
     def getdistance(self, city_a, city_b) -> float:
         return self.distances[city_a][city_b]
@@ -95,17 +96,30 @@ def mutate_path(path: Path, num_mutations: int) -> Path:
     """
 
     C = Path.cycle
-    R = []
-    N = num_mutations * 2
+    R1 = []
+    R2 = []
+    N = num_mutations
 
-    while len(R) < N:
+    while len(R1) < N:
         ran = random.randint()
-        while ran in R:
+        while (ran in R1) or (ran in R2):
             ran = random.randint()
-        R.append(ran)
+        R1.append(ran)
 
-    for i in range(num_mutations):
-        t1 = C()
+    while len(R2) < N:
+        ran = random.randint()
+        while (ran in R1) or (ran in R2):
+            ran = random.randint()
+        R2.append(ran)
+
+    for i in range(N):
+        c1 = C[R1[i]]
+        c2 = C[R2[i]]
+        C[R1[i]] = c2
+        C[R2[i]] = c1
+
+    m_path = Path()
+    m_path.setcycle(C)
 
     return m_path
 
@@ -184,19 +198,21 @@ def eliminate(intermediate_pop: np.ndarray, desired_size: int) -> np.ndarray:
 
 class group14:
     def __init__(self):
+        self.file = ''
         self.reporter = Reporter.Reporter(self.__class__.__name__)
+        self.CSV = CSVdata()
 
     # The evolutionary algorithm ’s main loop
 
     def optimize(self, filename):
-        # Read distance matrix from file .
-        file = open(filename)
-        distanceMatrix = np.loadtxt(file, delimiter=",")
-        file.close()
+        # Read distance matrix from file. Jordi: I used a separate object for that
+        self.file = filename
+        self.CSV.load_distances(self.file)
+
         # Your code here .
         yourConvergenceTestsHere = True
 
-        # initualize the population
+        # initialize the population
         n_city = distanceMatrix.shape[0]
         population = initialize_population(n_city)
 
