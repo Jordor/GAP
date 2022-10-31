@@ -4,7 +4,7 @@ import Reporter
 import numpy as np
 
 # TBD
-TIME_LIMIT = 5 * 60  # in seconds?
+TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
 K_TOURNAMENT = 5  # Number of candidates in the tournament
 POP_SIZE = 100  # Population size
 MUTATION_RATE = 5  # percent mutation rate
@@ -21,6 +21,16 @@ class Path:
 
     def setcycle(self, cycle):
         self.cycle = cycle
+        self.fitness = -1
+
+    def setfitness(self, fit):
+        self.fitness = fit
+
+    def getfitness(self):
+        if self.fitness == -1:
+            return None
+        else:
+            return self.fitness
 
     # example: cycle: [4 5 6 3 1 2 0]
 
@@ -33,7 +43,7 @@ class CSVdata:
         2- import the distance matrix as distances[][]
         3- implement a method for retrieving the distances according to city index
         """
-        self.distances = []
+        self.distances = np.empty()
 
     def load_distances(self, csv_file):
         file = open(csv_file)
@@ -61,7 +71,7 @@ def randomPath(path_size: int) -> Path:
     return path
 
 
-def calculate_fitness(path: Path, csvdata: CSVdata) -> float:
+def calculate_fitness(path: Path, csvdata: CSVdata):
     """
     :param path: Path object containing a particular city cycle
     :param csvdata: CVSdata object containing the information of the city distances
@@ -73,18 +83,16 @@ def calculate_fitness(path: Path, csvdata: CSVdata) -> float:
     4- do not forget the distance between the first and the last in the cycle
     """
 
-    C = Path.getcycle()
-    L = len(C)
+    C = path.getcycle()
+    L = C.shape(0)
     D = 0
+    s = csvdata.getdistance(C[-1], C[0])
 
     for i in range(L):
-        if i < L:
-            s = csvdata.getdistance(C[i], C[i + 1])
-        else:
-            s = csvdata.getdistance(C[i], C[0])
+        s = csvdata.getdistance(C[i], C[i + 1])
         D += s
 
-    return D
+    path.setfitness
 
 
 def mutate_path(path: Path, num_mutations: int) -> Path:
@@ -99,19 +107,20 @@ def mutate_path(path: Path, num_mutations: int) -> Path:
     3- repeat for num_mutations
     """
 
-    C = Path.cycle
-    R1 = []
-    R2 = []
+    C = Path.cycle.copy()
+    L = C.shape(0)
+    R1 = np.empty()
+    R2 = np.empty()
     N = num_mutations
 
-    while len(R1) < N:
-        ran = random.randint()
+    while R1.shape(0) < N:
+        ran = random.randint(L)
         while (ran in R1) or (ran in R2):
             ran = random.randint()
         R1.append(ran)
 
-    while len(R2) < N:
-        ran = random.randint()
+    while R2.shape(0) < N:
+        ran = random.randint(L)
         while (ran in R1) or (ran in R2):
             ran = random.randint()
         R2.append(ran)
@@ -143,21 +152,21 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
     5- insert p1 cities in the same order and the same position but in p2
     """
 
-    c1  = p1.getcycle()
-    c2  = p2.getcycle()
-    L   = len(c1)
-    nn  = 10
-    r   = random.randint(0, L - nn)
-    nc  = c2[:] # copy c2 for new cycle
-
-    cross = c1[r:r+nn]
+    c1 = p1.getcycle()
+    c2 = p2.getcycle()
+    L = c1.shape(0)
+    nn = 10
+    r = random.randint(0, L - nn)
+    nc = c2[:]  # copy c2 for new cycle
+    cross = c1[r:r + nn]
 
     for i in cross:
         # remove from nc
+        nc.delete(i)
 
     nc.append(cross)
-    np = Path()
-    np.setcycle(nc)
+    P = Path()
+    P.setcycle(nc)
 
     return np
 
