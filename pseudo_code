@@ -19,7 +19,8 @@ P: population
     b. variation():
         O: Empty
         #mutation (first?)
-        for (5% of P) p:
+        for path of P:
+            
             P.replace(p, mutate_path(p))
 
         #cross-over
