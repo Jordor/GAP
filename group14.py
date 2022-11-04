@@ -1,6 +1,7 @@
 import random
 import Reporter
 import numpy as np
+import time
 
 # TBD
 TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
@@ -13,7 +14,7 @@ NUM_MUTATIONS = 5
 class Path:
     def __init__(self):
         self.cycle
-        self.fitness = -1
+        self.fitness = None
 
     def getcycle(self):
         return self.cycle
@@ -26,10 +27,7 @@ class Path:
         self.fitness = fit
 
     def getfitness(self):
-        if self.fitness == -1:
-            return None
-        else:
-            return self.fitness
+        return self.fitness
 
     # example: cycle: [4 5 6 3 1 2 0]
 
@@ -167,7 +165,7 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
     P = Path()
     P.setcycle(nc)
 
-    return nc
+    return P
 
 
 def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
@@ -190,7 +188,7 @@ def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
     tomutate = int(L * mutation_rate / 100)
     randnumbers = []
 
-    for i in range(tomutate - 1):
+    for i in range(tomutate):
         r = random.randint(0, L)
         while r in randnumbers:
             r = random.randint(0, L)
@@ -215,16 +213,17 @@ def selection_k_tournament(initial_pop: np.ndarray, desired_size: int) -> np.nda
         parents = random.choices(initial_pop, k=K_TOURNAMENT)
         parents = sorted(parents, key=lambda agent: agent.fitness, reverse=True)
         new_pop.append(parents[0])
-    return np.array()
+    return new_pop
 
 
 def select_2_parents(pop: np.ndarray):
     # return p1, p2
-    p1, p2 = random.choices(pop, k=2)  # completely random for now
+    p1, p2 = random.choices(pop, k=2)  # completely random for now # we can change it later
     return p1, p2
 
 
 def variation(population: np.ndarray) -> None:
+
     mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
 
     offspring = []
@@ -236,10 +235,14 @@ def variation(population: np.ndarray) -> None:
 
 
 def eliminate(intermediate_pop: np.ndarray, desired_size: int) -> np.ndarray:
+
+    for p in intermediate_pop:
+        calculate_fitness(p)
+
     p = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=True)
     population = []
-    for i in range(POP_SIZE):
-        population.append(p[i])
+
+    population = p[:desired_size]
 
     return np.array(population)
 
@@ -263,17 +266,25 @@ class group14:
         n_city = CSVdata.numcities()
         population = initialize_population(n_city)
 
+        meanObjective = 0.0
+        bestObjective = 0.0
+        bestSolution = np.array([1, 2, 3, 4, 5])
+
         while (simtime < TIME_LIMIT):
 
-
-
-            meanObjective = 0.0
-            bestObjective = 0.0
-            bestSolution = np.array([1, 2, 3, 4, 5])
+            start = time.time()
 
             population = selection_k_tournament(population, POP_SIZE)
             intemediate_pop = variation(population)
             population = eliminate(intemediate_pop, POP_SIZE)
+
+            currentBest = population[0].fitness
+            if currentBest < bestObjective or currentBest == 0.0:
+                bestObjective = currentBest
+                bestSolution = population[0].getCycle()
+
+            end = time.time()
+            simtime += end-start()
 
             # Call the reporter with :
             # - the mean objective function value of the population
