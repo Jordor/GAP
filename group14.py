@@ -1,6 +1,6 @@
 import random
 
-import Reporter
+#import Reporter
 import numpy as np
 
 # TBD
@@ -168,7 +168,7 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
     P = Path()
     P.setcycle(nc)
 
-    return np
+    return nc
 
 
 def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
