@@ -1,5 +1,4 @@
 import random
-
 import Reporter
 import numpy as np
 
@@ -168,7 +167,7 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
     P = Path()
     P.setcycle(nc)
 
-    return np
+    return nc
 
 
 def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
@@ -221,7 +220,8 @@ def selection_k_tournament(initial_pop: np.ndarray, desired_size: int) -> np.nda
 
 def select_2_parents(pop: np.ndarray):
     # return p1, p2
-    pass
+    p1, p2 = random.choices(pop, k=2)  # completely random for now
+    return p1, p2
 
 
 def variation(population: np.ndarray) -> None:
@@ -236,7 +236,12 @@ def variation(population: np.ndarray) -> None:
 
 
 def eliminate(intermediate_pop: np.ndarray, desired_size: int) -> np.ndarray:
-    pass
+    p = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=True)
+    population = []
+    for i in range(POP_SIZE):
+        population.append(p[i])
+
+    return np.array(population)
 
 
 class group14:
@@ -252,14 +257,16 @@ class group14:
         self.file = filename
         self.CSV.load_distances(self.file)
 
-        # Your code here .
-        yourConvergenceTestsHere = True
+        simtime = 0
 
         # initialize the population
         n_city = CSVdata.numcities()
         population = initialize_population(n_city)
 
-        while (yourConvergenceTestsHere):
+        while (simtime < TIME_LIMIT):
+
+
+
             meanObjective = 0.0
             bestObjective = 0.0
             bestSolution = np.array([1, 2, 3, 4, 5])
