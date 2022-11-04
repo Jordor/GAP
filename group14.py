@@ -274,6 +274,7 @@ class group14:
 
             start = time.time()
 
+
             population = selection_k_tournament(population, POP_SIZE)
             intemediate_pop = variation(population)
             population = eliminate(intemediate_pop, POP_SIZE)
