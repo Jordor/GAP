@@ -13,7 +13,7 @@ NUM_MUTATIONS = 5
 
 class Path:
     def __init__(self):
-        self.cycle
+        self.cycle = []
         self.fitness = None
 
     def getcycle(self):
@@ -40,7 +40,7 @@ class CSVdata:
         2- import the distance matrix as distances[][]
         3- implement a method for retrieving the distances according to city index
         """
-        self.distances = np.empty()
+        self.distances = np.ndarray([1, 2, 3, 4, 5])
 
     def load_distances(self, csv_file):
         file = open(csv_file)
@@ -81,15 +81,14 @@ def calculate_fitness(path: Path, csvdata: CSVdata):
     """
 
     C = path.getcycle()
-    L = C.shape(0)
-    D = 0
-    s = csvdata.getdistance(C[-1], C[0])
+    L = len(C) - 1
+    D = csvdata.getdistance(C[-1], C[0])
 
     for i in range(L):
-        s = csvdata.getdistance(C[i], C[i + 1])
-        D += s
+        s2 = csvdata.getdistance(C[i], C[i + 1])
+        D += s2
 
-    path.setfitness
+    path.setfitness(D)
 
 
 def mutate_path(path: Path, num_mutations: int) -> Path:
@@ -104,29 +103,37 @@ def mutate_path(path: Path, num_mutations: int) -> Path:
     3- repeat for num_mutations
     """
 
-    C = Path.cycle.copy()
-    L = C.shape(0)
-    R1 = np.empty()
-    R2 = np.empty()
+    C = path.cycle.copy()
+    L = len(C)
+    R1 = np.array([], dtype=int)
+    R2 = np.array([], dtype=int)
     N = num_mutations
 
-    while R1.shape(0) < N:
-        ran = random.randint(L)
-        while (ran in R1) or (ran in R2):
-            ran = random.randint()
-        R1.append(ran)
+    i = 0
 
-    while R2.shape(0) < N:
-        ran = random.randint(L)
+    while i < N:
+        ran = random.randint(0, L - 1)
         while (ran in R1) or (ran in R2):
-            ran = random.randint()
-        R2.append(ran)
+            ran = random.randint(0, L - 1)
+
+        R1 = np.append(R1, ran)
+        i += 1
+
+    i = 0
+
+    while i < N:
+        ran = random.randint(0, L - 1)
+        while (ran in R1) or (ran in R2):
+            ran = random.randint(0, L - 1)
+
+        R2 = np.append(R2, ran)
+        i += 1
 
     for i in range(N):
-        c1 = C[R1[i]]
-        c2 = C[R2[i]]
-        C[R1[i]] = c2
-        C[R2[i]] = c1
+        c1 = C[int(R1[i])]
+        c2 = C[int(R2[i])]
+        C[int(R1[i])] = c2
+        C[int(R2[i])] = c1
 
     m_path = Path()
     m_path.setcycle(C)
@@ -151,17 +158,18 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
 
     c1 = p1.getcycle()
     c2 = p2.getcycle()
-    L = c1.shape(0)
+    L = len(c1)
     nn = 10
-    r = random.randint(0, L - nn)
+    r = random.randint(0, L - nn - 1)
     nc = c2[:]  # copy c2 for new cycle
     cross = c1[r:r + nn]
 
     for i in cross:
         # remove from nc
-        nc.delete(i)
+        index = np.where(nc == i)
+        nc = np.delete(nc, index)
 
-    nc.append(cross)
+    nc = np.append(nc, cross)
     P = Path()
     P.setcycle(nc)
 
@@ -184,7 +192,7 @@ def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
     """
 
     mutated_pop = pop.copy()
-    L = len(mutated_pop)
+    L = len(mutated_pop) - 1
     tomutate = int(L * mutation_rate / 100)
     randnumbers = []
 
@@ -207,37 +215,42 @@ def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
     return np.array(pop)
 
 
-def selection_k_tournament(initial_pop: np.ndarray, desired_size: int) -> np.ndarray:
-    new_pop = np.array
+def selection_k_tournament(initial_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
+    new_pop = np.array([])
     for x in range(desired_size):
         parents = random.choices(initial_pop, k=K_TOURNAMENT)
+
+        for p in parents:
+            calculate_fitness(p, csvdata)
+
         parents = sorted(parents, key=lambda agent: agent.fitness, reverse=True)
-        new_pop.append(parents[0])
+        new_pop = np.append(new_pop, parents[0])
     return new_pop
 
 
 def select_2_parents(pop: np.ndarray):
     # return p1, p2
-    p1, p2 = random.choices(pop, k=2)  # completely random for now # we can change it later
-    return p1, p2
+    parents = []
+    parents = random.choices(pop, k=2)  # completely random for now # we can change it later
+    return parents[0], parents[1]
 
 
 def variation(population: np.ndarray) -> None:
-
     mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
 
     offspring = []
     for i in range(POP_SIZE):
-        # how to choose 2 parents?,for now it's random # Jordi: we will implement some selective pressure later, for now let's keep it simple
-        p1, p2 = select_2_parents(mutate_population)
+        p1, p2 = select_2_parents(mutated_population)
         offspring.append(crossover_parents(p1, p2))
-    return np.concatenate(mutated_population, offspring)
+
+    out = np.append(mutated_population, offspring)
+
+    return out
 
 
-def eliminate(intermediate_pop: np.ndarray, desired_size: int) -> np.ndarray:
-
+def eliminate(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
     for p in intermediate_pop:
-        calculate_fitness(p)
+        calculate_fitness(p, csvdata)
 
     p = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=True)
     population = []
@@ -253,6 +266,8 @@ class group14:
         self.reporter = Reporter.Reporter(self.__class__.__name__)
         self.CSV = CSVdata()  # this object can return distances
 
+        print('WHATEVER, DUH')
+
     # The evolutionary algorithm ’s main loop
 
     def optimize(self, filename):
@@ -263,8 +278,8 @@ class group14:
         simtime = 0
 
         # initialize the population
-        n_city = CSVdata.numcities()
-        population = initialize_population(n_city)
+        n_city = self.CSV.numcities()
+        population = initialize_population(POP_SIZE, n_city)
 
         meanObjective = 0.0
         bestObjective = 0.0
@@ -274,18 +289,22 @@ class group14:
 
             start = time.time()
 
-
-            population = selection_k_tournament(population, POP_SIZE)
+            population = selection_k_tournament(population, POP_SIZE, self.CSV)
             intemediate_pop = variation(population)
-            population = eliminate(intemediate_pop, POP_SIZE)
+            population = eliminate(intemediate_pop, POP_SIZE, self.CSV)
 
             currentBest = population[0].fitness
+
             if currentBest < bestObjective or currentBest == 0.0:
                 bestObjective = currentBest
-                bestSolution = population[0].getCycle()
+                bestSolution = population[0].getcycle()
 
             end = time.time()
-            simtime += end-start()
+            simtime += end - start
+
+            print('Current best is = ', currentBest)
+            print('Global best is = ', bestObjective)
+            print('Best Solution ', bestSolution)
 
             # Call the reporter with :
             # - the mean objective function value of the population
@@ -296,5 +315,10 @@ class group14:
                 meanObjective, bestObjective, bestSolution)
             if timeLeft < 0:
                 break
-        # Your code here .
+
         return 0
+
+
+g = group14()
+
+g.optimize("./data/tour50.csv")
