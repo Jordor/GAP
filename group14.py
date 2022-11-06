@@ -5,10 +5,9 @@ import numpy as np
 
 # TBD
 TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
-K_TOURNAMENT = 8  # Number of candidates in the tournament
-POP_SIZE = 100  # Population size
-MUTATION_RATE = 0.05  # percent mutation rate
-NUM_MUTATIONS = 5
+K_TOURNAMENT = 5  # Number of candidates in the tournament
+POP_SIZE = 200  # Population size
+MUTATION_RATE = 0.02  # percent mutation rate
 
 
 class Path:
@@ -170,13 +169,32 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
         nc = np.delete(nc, index)
 
     nc = np.append(nc, cross)
-    P = Path()
-    P.setcycle(nc)
+    p = Path()
+    p.setcycle(nc)
 
-    return P
+    return p
 
 
-def mutate_population(pop: np.ndarray, mutation_rate: float, num_mutations: int):
+def ordered_crossover(parent1: Path, parent2: Path):
+    child_p1 = []
+
+    path_a = int(random.random() * len(parent1.cycle))
+    path_b = int(random.random() * len(parent1.cycle))
+
+    startGene = min(path_a, path_b)
+    endGene = max(path_a, path_b)
+
+    for i in range(startGene, endGene):
+        child_p1.append(parent1.cycle[i])
+
+    child_p2 = [item for item in parent2.cycle if item not in child_p1]
+
+    child = Path()
+    child.setcycle(np.array(child_p1 + child_p2))
+    return child
+
+
+def mutate_population(pop: np.ndarray, mutation_rate: float):
     """
     :param pop: current population
     :param mutation_rate: integer % of pop to mutate
@@ -190,7 +208,6 @@ def mutate_population(pop: np.ndarray, mutation_rate: float, num_mutations: int)
     5- apply mutation to those indexes to copied population
     6- return mutated population
     """
-
     L = len(pop[0].cycle) -1
 
     for p in pop:
@@ -198,9 +215,7 @@ def mutate_population(pop: np.ndarray, mutation_rate: float, num_mutations: int)
             i = random.randint(0, L)
             j = random.randint(0, L)
             if i != j:
-                temp = p.cycle[i]
                 p.cycle[i], p.cycle[j] = p.cycle[j], p.cycle[i]
-
     return pop
 
 
@@ -211,35 +226,30 @@ def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
     return np.array(pop)
 
 
-def selection_k_tournament(initial_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
-    new_pop = np.array([])
-    for x in range(desired_size):
-        parents = random.choices(initial_pop, k=K_TOURNAMENT)
+def selection_k_tournament(initial_pop: np.ndarray, csvdata) -> np.ndarray:
+    parents = random.choices(initial_pop, k=K_TOURNAMENT)
 
-        for p in parents:
-            calculate_fitness(p, csvdata)
+    for p in parents:
+        calculate_fitness(p, csvdata)
 
-        parents = sorted(parents, key=lambda agent: agent.fitness, reverse=False)
-        new_pop = np.append(new_pop, parents[0])
-    return new_pop
+    parents = sorted(parents, key=lambda agent: agent.fitness, reverse=False)
+    return parents[0]
 
 
-def select_2_parents(pop: np.ndarray):
-    # return p1, p2
-    parents = []
-    parents = random.choices(pop, k=2)  # completely random for now # we can change it later
-    return parents[0], parents[1]
+def select_2_parents(pop: np.ndarray, csv):
+    #parents = random.choices(pop, k=2)  # completely random for now # we can change it later
+    return selection_k_tournament(pop, csv), selection_k_tournament(pop, csv)
 
 
-def variation(population: np.ndarray) -> np.ndarray:
-    mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
+def variation(population: np.ndarray, csv) -> np.ndarray:
+    #mutated_population = mutate_population(population, MUTATION_RATE)
 
     offspring = []
     for i in range(POP_SIZE):
-        p1, p2 = select_2_parents(mutated_population)
-        offspring.append(crossover_parents(p1, p2))
+        p1, p2 = select_2_parents(population, csv)
+        offspring.append(ordered_crossover(p1, p2))
 
-    out = np.append(mutated_population, offspring)
+    out = np.append(population, offspring)
 
     return out
 
@@ -279,8 +289,6 @@ class group14:
         population = initialize_population(POP_SIZE, n_city)
         for p in population:
             calculate_fitness(p, self.CSV)
-            print('fitness: ', p.fitness)
-
 
         meanObjective = 0.0
         bestObjective = 0.0
@@ -291,9 +299,11 @@ class group14:
 
             start = time.time()
 
-            population = selection_k_tournament(population, POP_SIZE, self.CSV)
-            intemediate_pop = variation(population)
-            population = eliminate(intemediate_pop, POP_SIZE, self.CSV)
+            #population = selection_k_tournament(population, POP_SIZE, self.CSV)
+            intermediate_pop = variation(population, self.CSV)
+            intermediate_pop = mutate_population(intermediate_pop, MUTATION_RATE)
+            population = eliminate(intermediate_pop, POP_SIZE, self.CSV)
+
 
             currentBest = population[0].fitness
 
