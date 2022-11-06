@@ -2,6 +2,7 @@ import random
 import Reporter
 import numpy as np
 import time
+import os
 
 # TBD
 TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
@@ -83,9 +84,13 @@ def calculate_fitness(path: Path, csvdata: CSVdata):
     C = path.getcycle()
     L = len(C) - 1
     D = csvdata.getdistance(C[-1], C[0])
+    if D>100000:
+        D = 100000
 
     for i in range(L):
         s2 = csvdata.getdistance(C[i], C[i + 1])
+        if s2 > 100000:
+            s2 = 100000
         D += s2
 
     path.setfitness(D)
@@ -249,13 +254,13 @@ def variation(population: np.ndarray) -> None:
 
 
 def eliminate(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
+
     for p in intermediate_pop:
         calculate_fitness(p, csvdata)
 
-    p = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=True)
-    population = []
+    pop = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=False)
 
-    population = p[:desired_size]
+    population = pop[:desired_size]
 
     return np.array(population)
 
@@ -295,13 +300,14 @@ class group14:
 
             currentBest = population[0].fitness
 
-            if currentBest < bestObjective or currentBest == 0.0:
+            if currentBest < bestObjective or bestObjective == 0.0:
                 bestObjective = currentBest
                 bestSolution = population[0].getcycle()
 
             end = time.time()
             simtime += end - start
 
+            print('\n'*20)
             print('Current best is = ', currentBest)
             print('Global best is = ', bestObjective)
             print('Best Solution ', bestSolution)
@@ -317,7 +323,6 @@ class group14:
                 break
 
         return 0
-
 
 g = group14()
 
