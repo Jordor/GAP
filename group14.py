@@ -1,15 +1,13 @@
 import random
 import Reporter
-import numpy as np
 import time
-import os
+import numpy as np
 
 # TBD
 TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
 K_TOURNAMENT = 5  # Number of candidates in the tournament
-POP_SIZE = 100  # Population size
-MUTATION_RATE = 5  # percent mutation rate
-NUM_MUTATIONS = 5
+POP_SIZE = 200  # Population size
+MUTATION_RATE = 0.05  # percent mutation rate try, 5
 
 
 class Path:
@@ -64,8 +62,8 @@ def randomPath(path_size: int) -> Path:
     """
 
     path = Path()
-    C = np.random.permutation(path_size)
-    path.setcycle(C)
+    c = np.random.permutation(path_size)
+    path.setcycle(c)
     return path
 
 
@@ -84,12 +82,12 @@ def calculate_fitness(path: Path, csvdata: CSVdata):
     C = path.getcycle()
     L = len(C) - 1
     D = csvdata.getdistance(C[-1], C[0])
-    if D>100000:
+    if (D > 100000):
         D = 100000
 
     for i in range(L):
         s2 = csvdata.getdistance(C[i], C[i + 1])
-        if s2 > 100000:
+        if (s2 > 100000):
             s2 = 100000
         D += s2
 
@@ -175,13 +173,32 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
         nc = np.delete(nc, index)
 
     nc = np.append(nc, cross)
-    P = Path()
-    P.setcycle(nc)
+    p = Path()
+    p.setcycle(nc)
 
-    return P
+    return p
 
 
-def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
+def ordered_crossover(parent1: Path, parent2: Path):
+    child_p1 = []
+
+    path_a = int(random.random() * len(parent1.cycle))
+    path_b = int(random.random() * len(parent1.cycle))
+
+    startGene = min(path_a, path_b)
+    endGene = max(path_a, path_b)
+
+    for i in range(startGene, endGene):
+        child_p1.append(parent1.cycle[i])
+
+    child_p2 = [item for item in parent2.cycle if item not in child_p1]
+
+    child = Path()
+    child.setcycle(np.array(child_p1 + child_p2))
+    return child
+
+
+def mutate_population(pop: np.ndarray, mutation_rate: float):
     """
     :param pop: current population
     :param mutation_rate: integer % of pop to mutate
@@ -195,22 +212,19 @@ def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
     5- apply mutation to those indexes to copied population
     6- return mutated population
     """
+    L = len(pop[0].cycle) -1
 
-    mutated_pop = pop.copy()
-    L = len(mutated_pop) - 1
-    tomutate = int(L * mutation_rate / 100)
-    randnumbers = []
-
-    for i in range(tomutate):
-        r = random.randint(0, L)
-        while r in randnumbers:
-            r = random.randint(0, L)
-        randnumbers.append(r)
-
-    for index in randnumbers:
-        mutated_pop[index] = mutate_path(pop[index], num_mutations)
-
-    return mutated_pop
+    new_pop = []
+    for p in pop:
+        if random.random() < mutation_rate:
+            # i = random.randint(0, L)
+            # j = random.randint(0, L)
+            # if i != j:
+            #    p.cycle[i], p.cycle[j] = p.cycle[j], p.cycle[i]
+            new_pop.append(mutate_path(p, random.randint(1, 6)))
+        else:
+            new_pop.append(p)
+    return np.array(new_pop)
 
 
 def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
@@ -220,49 +234,44 @@ def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
     return np.array(pop)
 
 
-def selection_k_tournament(initial_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
-    new_pop = np.array([])
-    for x in range(desired_size):
-        parents = random.choices(initial_pop, k=K_TOURNAMENT)
+def selection_k_tournament(initial_pop: np.ndarray, csvdata) -> Path:
+    parents = random.choices(initial_pop, k=K_TOURNAMENT)
 
-        for p in parents:
-            calculate_fitness(p, csvdata)
+    for p in parents:
+        calculate_fitness(p, csvdata)
 
-        parents = sorted(parents, key=lambda agent: agent.fitness, reverse=True)
-        new_pop = np.append(new_pop, parents[0])
-    return new_pop
+    parents = sorted(parents, key=lambda agent: agent.fitness, reverse=False)
+    return parents[0]
 
 
-def select_2_parents(pop: np.ndarray):
-    # return p1, p2
-    parents = []
-    parents = random.choices(pop, k=2)  # completely random for now # we can change it later
-    return parents[0], parents[1]
+def select_2_parents(pop: np.ndarray, csv):
+    #parents = random.choices(pop, k=2)  # completely random for now # we can change it later
+    return selection_k_tournament(pop, csv), selection_k_tournament(pop, csv)
 
 
-def variation(population: np.ndarray) -> None:
-    mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
+def variation(population: np.ndarray, csv) -> np.ndarray:
+    #mutated_population = mutate_population(population, MUTATION_RATE)
 
     offspring = []
-    for i in range(POP_SIZE):
-        p1, p2 = select_2_parents(mutated_population)
-        offspring.append(crossover_parents(p1, p2))
+    for i in range(3 * POP_SIZE):
+        p1, p2 = select_2_parents(population, csv)
+        offspring.append(ordered_crossover(p1, p2))
 
-    out = np.append(mutated_population, offspring)
+    # out = np.append(population, offspring)
 
-    return out
+    # return out
+    return offspring
 
 
 def eliminate(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
 
     for p in intermediate_pop:
         calculate_fitness(p, csvdata)
+    pop = []
+    for i in range(0, desired_size):
+        pop.append(selection_k_tournament(intermediate_pop, csvdata))
 
-    pop = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=False)
-
-    population = pop[:desired_size]
-
-    return np.array(population)
+    return np.array(sorted(pop, key=lambda agent: agent.fitness, reverse=False))
 
 
 class group14:
@@ -270,8 +279,6 @@ class group14:
         self.file = ''
         self.reporter = Reporter.Reporter(self.__class__.__name__)
         self.CSV = CSVdata()  # this object can return distances
-
-        print('WHATEVER, DUH')
 
     # The evolutionary algorithm ’s main loop
 
@@ -284,32 +291,44 @@ class group14:
 
         # initialize the population
         n_city = self.CSV.numcities()
+
         population = initialize_population(POP_SIZE, n_city)
+        for p in population:
+            calculate_fitness(p, self.CSV)
 
         meanObjective = 0.0
         bestObjective = 0.0
         bestSolution = np.array([1, 2, 3, 4, 5])
 
+
         while (simtime < TIME_LIMIT):
 
             start = time.time()
 
-            population = selection_k_tournament(population, POP_SIZE, self.CSV)
-            intemediate_pop = variation(population)
-            population = eliminate(intemediate_pop, POP_SIZE, self.CSV)
+            #population = selection_k_tournament(population, POP_SIZE, self.CSV)
+            intermediate_pop = variation(population, self.CSV)
+            intermediate_pop = mutate_population(intermediate_pop, MUTATION_RATE)
+            population = eliminate(intermediate_pop, POP_SIZE, self.CSV)
 
             currentBest = population[0].fitness
 
+            fits = 0.0
             if currentBest < bestObjective or bestObjective == 0.0:
                 bestObjective = currentBest
                 bestSolution = population[0].getcycle()
 
+            for p in population:
+                fits += p.getfitness()
+
+            meanObjective = fits / POP_SIZE
+
             end = time.time()
             simtime += end - start
 
-            print('\n'*20)
+            print('\n'*2)
             print('Current best is = ', currentBest)
             print('Global best is = ', bestObjective)
+            print('mean objective is', meanObjective)
             print('Best Solution ', bestSolution)
 
             # Call the reporter with :
@@ -321,6 +340,7 @@ class group14:
                 meanObjective, bestObjective, bestSolution)
             if timeLeft < 0:
                 break
+
 
         return 0
 
