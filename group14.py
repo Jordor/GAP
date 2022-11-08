@@ -7,7 +7,7 @@ import numpy as np
 TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
 K_TOURNAMENT = 5  # Number of candidates in the tournament
 POP_SIZE = 200  # Population size
-MUTATION_RATE = 0.02  # percent mutation rate
+MUTATION_RATE = 0.05  # percent mutation rate try, 5
 
 
 class Path:
@@ -82,9 +82,13 @@ def calculate_fitness(path: Path, csvdata: CSVdata):
     C = path.getcycle()
     L = len(C) - 1
     D = csvdata.getdistance(C[-1], C[0])
+    if (D > 100000):
+        D = 100000
 
     for i in range(L):
         s2 = csvdata.getdistance(C[i], C[i + 1])
+        if (s2 > 100000):
+            s2 = 100000
         D += s2
 
     path.setfitness(D)
@@ -210,13 +214,17 @@ def mutate_population(pop: np.ndarray, mutation_rate: float):
     """
     L = len(pop[0].cycle) -1
 
+    new_pop = []
     for p in pop:
         if random.random() < mutation_rate:
-            i = random.randint(0, L)
-            j = random.randint(0, L)
-            if i != j:
-                p.cycle[i], p.cycle[j] = p.cycle[j], p.cycle[i]
-    return pop
+            # i = random.randint(0, L)
+            # j = random.randint(0, L)
+            # if i != j:
+            #    p.cycle[i], p.cycle[j] = p.cycle[j], p.cycle[i]
+            new_pop.append(mutate_path(p, random.randint(1, 6)))
+        else:
+            new_pop.append(p)
+    return np.array(new_pop)
 
 
 def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
@@ -226,7 +234,7 @@ def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
     return np.array(pop)
 
 
-def selection_k_tournament(initial_pop: np.ndarray, csvdata) -> np.ndarray:
+def selection_k_tournament(initial_pop: np.ndarray, csvdata) -> Path:
     parents = random.choices(initial_pop, k=K_TOURNAMENT)
 
     for p in parents:
@@ -245,25 +253,25 @@ def variation(population: np.ndarray, csv) -> np.ndarray:
     #mutated_population = mutate_population(population, MUTATION_RATE)
 
     offspring = []
-    for i in range(POP_SIZE):
+    for i in range(3 * POP_SIZE):
         p1, p2 = select_2_parents(population, csv)
         offspring.append(ordered_crossover(p1, p2))
 
-    out = np.append(population, offspring)
+    # out = np.append(population, offspring)
 
-    return out
+    # return out
+    return offspring
 
 
 def eliminate(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
 
     for p in intermediate_pop:
         calculate_fitness(p, csvdata)
+    pop = []
+    for i in range(0, desired_size):
+        pop.append(selection_k_tournament(intermediate_pop, csvdata))
 
-    pop = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=False)
-
-    population = pop[:desired_size]
-
-    return np.array(population)
+    return np.array(sorted(pop, key=lambda agent: agent.fitness, reverse=False))
 
 
 class group14:
@@ -271,8 +279,6 @@ class group14:
         self.file = ''
         self.reporter = Reporter.Reporter(self.__class__.__name__)
         self.CSV = CSVdata()  # this object can return distances
-
-        print('WHATEVER, DUH')
 
     # The evolutionary algorithm ’s main loop
 
@@ -304,12 +310,17 @@ class group14:
             intermediate_pop = mutate_population(intermediate_pop, MUTATION_RATE)
             population = eliminate(intermediate_pop, POP_SIZE, self.CSV)
 
-
             currentBest = population[0].fitness
 
+            fits = 0.0
             if currentBest < bestObjective or bestObjective == 0.0:
                 bestObjective = currentBest
                 bestSolution = population[0].getcycle()
+
+            for p in population:
+                fits += p.getfitness()
+
+            meanObjective = fits / POP_SIZE
 
             end = time.time()
             simtime += end - start
@@ -317,6 +328,7 @@ class group14:
             print('\n'*2)
             print('Current best is = ', currentBest)
             print('Global best is = ', bestObjective)
+            print('mean objective is', meanObjective)
             print('Best Solution ', bestSolution)
 
             # Call the reporter with :
