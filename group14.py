@@ -1,19 +1,19 @@
 import random
-
-#import Reporter
+import Reporter
+import time
 import numpy as np
 
-# TBD
-TIME_LIMIT = 5 * 60  # in seconds? otherwise calculate accordingly
+TIME_LIMIT = 5 * 60  # seconds
 K_TOURNAMENT = 5  # Number of candidates in the tournament
-POP_SIZE = 100  # Population size
-MUTATION_RATE = 5  # percent mutation rate
-NUM_MUTATIONS = 5
+POP_SIZE = 500  # Population size
+MUTATION_RATE = 0.10  # Percent mutation rate 1 = 100%
+NUM_MUT = 30
+MIN_MUT = 1
 
 
 class Path:
     def __init__(self):
-        self.cycle
+        self.cycle = []
         self.fitness = -1
 
     def getcycle(self):
@@ -27,10 +27,7 @@ class Path:
         self.fitness = fit
 
     def getfitness(self):
-        if self.fitness == -1:
-            return None
-        else:
-            return self.fitness
+        return self.fitness
 
     # example: cycle: [4 5 6 3 1 2 0]
 
@@ -43,7 +40,7 @@ class CSVdata:
         2- import the distance matrix as distances[][]
         3- implement a method for retrieving the distances according to city index
         """
-        self.distances = np.empty()
+        self.distances = np.ndarray([1, 2, 3, 4, 5])
 
     def load_distances(self, csv_file):
         file = open(csv_file)
@@ -66,8 +63,8 @@ def randomPath(path_size: int) -> Path:
     """
 
     path = Path()
-    C = np.random.permutation(path_size)
-    path.setcycle(C)
+    c = np.random.permutation(path_size)
+    path.setcycle(c)
     return path
 
 
@@ -83,16 +80,21 @@ def calculate_fitness(path: Path, csvdata: CSVdata):
     4- do not forget the distance between the first and the last in the cycle
     """
 
-    C = path.getcycle()
-    L = C.shape(0)
-    D = 0
-    s = csvdata.getdistance(C[-1], C[0])
+    if path.getfitness() == -1:
 
-    for i in range(L):
-        s = csvdata.getdistance(C[i], C[i + 1])
-        D += s
+        C = path.getcycle()
+        L = len(C) - 1
+        D = csvdata.getdistance(C[-1], C[0])
+        if (D > 100000):
+            D = 100000
 
-    path.setfitness
+        for i in range(L):
+            s2 = csvdata.getdistance(C[i], C[i + 1])
+            if (s2 > 100000):
+                s2 = 100000
+            D += s2
+
+        path.setfitness(D)
 
 
 def mutate_path(path: Path, num_mutations: int) -> Path:
@@ -107,29 +109,37 @@ def mutate_path(path: Path, num_mutations: int) -> Path:
     3- repeat for num_mutations
     """
 
-    C = Path.cycle.copy()
-    L = C.shape(0)
-    R1 = np.empty()
-    R2 = np.empty()
+    C = path.cycle.copy()
+    L = len(C)
+    R1 = np.array([], dtype=int)
+    R2 = np.array([], dtype=int)
     N = num_mutations
 
-    while R1.shape(0) < N:
-        ran = random.randint(L)
-        while (ran in R1) or (ran in R2):
-            ran = random.randint()
-        R1.append(ran)
+    i = 0
 
-    while R2.shape(0) < N:
-        ran = random.randint(L)
+    while i < N:
+        ran = random.randint(0, L - 1)
         while (ran in R1) or (ran in R2):
-            ran = random.randint()
-        R2.append(ran)
+            ran = random.randint(0, L - 1)
+
+        R1 = np.append(R1, ran)
+        i += 1
+
+    i = 0
+
+    while i < N:
+        ran = random.randint(0, L - 1)
+        while (ran in R1) or (ran in R2):
+            ran = random.randint(0, L - 1)
+
+        R2 = np.append(R2, ran)
+        i += 1
 
     for i in range(N):
-        c1 = C[R1[i]]
-        c2 = C[R2[i]]
-        C[R1[i]] = c2
-        C[R2[i]] = c1
+        c1 = C[int(R1[i])]
+        c2 = C[int(R2[i])]
+        C[int(R1[i])] = c2
+        C[int(R2[i])] = c1
 
     m_path = Path()
     m_path.setcycle(C)
@@ -154,24 +164,44 @@ def crossover_parents(p1: Path, p2: Path) -> Path:
 
     c1 = p1.getcycle()
     c2 = p2.getcycle()
-    L = c1.shape(0)
+    L = len(c1)
     nn = 10
-    r = random.randint(0, L - nn)
+    r = random.randint(0, L - nn - 1)
     nc = c2[:]  # copy c2 for new cycle
     cross = c1[r:r + nn]
 
     for i in cross:
         # remove from nc
-        nc.delete(i)
+        index = np.where(nc == i)
+        nc = np.delete(nc, index)
 
-    nc.append(cross)
-    P = Path()
-    P.setcycle(nc)
+    nc = np.append(nc, cross)
+    p = Path()
+    p.setcycle(nc)
 
-    return nc
+    return p
 
 
-def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
+def ordered_crossover(parent1: Path, parent2: Path):
+    child_p1 = []
+
+    path_a = int(random.random() * len(parent1.cycle))
+    path_b = int(random.random() * len(parent1.cycle))
+
+    startGene = min(path_a, path_b)
+    endGene = max(path_a, path_b)
+
+    for i in range(startGene, endGene):
+        child_p1.append(parent1.cycle[i])
+
+    child_p2 = [item for item in parent2.cycle if item not in child_p1]
+
+    child = Path()
+    child.setcycle(np.array(child_p1 + child_p2))
+    return child
+
+
+def mutate_population(pop: np.ndarray, mutation_rate: float):
     """
     :param pop: current population
     :param mutation_rate: integer % of pop to mutate
@@ -185,22 +215,19 @@ def mutate_population(pop: np.ndarray, mutation_rate: int, num_mutations: int):
     5- apply mutation to those indexes to copied population
     6- return mutated population
     """
+    L = len(pop[0].cycle) - 1
 
-    mutated_pop = pop.copy()
-    L = len(mutated_pop)
-    tomutate = int(L * mutation_rate / 100)
-    randnumbers = []
-
-    for i in range(tomutate - 1):
-        r = random.randint(0, L)
-        while r in randnumbers:
-            r = random.randint(0, L)
-        randnumbers.append(r)
-
-    for index in randnumbers:
-        mutated_pop[index] = mutate_path(pop[index], num_mutations)
-
-    return mutated_pop
+    new_pop = []
+    for p in pop:
+        if random.random() < mutation_rate:
+            # i = random.randint(0, L)
+            # j = random.randint(0, L)
+            # if i != j:
+            #    p.cycle[i], p.cycle[j] = p.cycle[j], p.cycle[i]
+            new_pop.append(mutate_path(p, random.randint(MIN_MUT, NUM_MUT)))
+        else:
+            new_pop.append(p)
+    return np.array(new_pop)
 
 
 def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
@@ -210,39 +237,51 @@ def initialize_population(pop_size: int, path_size: int) -> np.ndarray:
     return np.array(pop)
 
 
-def selection_k_tournament(initial_pop: np.ndarray, desired_size: int) -> np.ndarray:
-    new_pop = np.array
-    for x in range(desired_size):
-        parents = random.choices(initial_pop, k=K_TOURNAMENT)
-        parents = sorted(parents, key=lambda agent: agent.fitness, reverse=True)
-        new_pop.append(parents[0])
-    return np.array()
+def selection_k_tournament(population: np.ndarray, csvdata, K, popsize) -> np.ndarray:
+    small_population = []
+
+    for i in range(popsize):  # Do this until popsize is reached
+        selected = random.choices(population, k=K)  # Randomly select K individuals
+        for p in selected:  # get those individuals fitness
+            calculate_fitness(p, csvdata)
+        selected = sorted(selected, key=lambda agent: agent.fitness, reverse=False)  # sort by fitness
+        index = np.where(population == selected[0])
+        # population = np.delete(population, index)  # remove the best from the population ("without replacement")
+        small_population.append(selected[0])  # add the best to the returned population
+
+    return np.array(small_population)  # Return the population
 
 
-def select_2_parents(pop: np.ndarray):
-    # return p1, p2
-    p1, p2 = random.choices(pop, k=2) #completely random for now
-    return p1, p2
+def select_2_parents(pop: np.ndarray, csv):
+    # parents = random.choices(pop, k=2)  # completely random for now # we can change it later
+    # return selection_k_tournament(pop, csv, K_TOURNAMENT_CROSSOVER), selection_k_tournament(pop, csv, K_TOURNAMENT_CROSSOVER)
+    return random.choices(pop, k=2)  # random is OK
 
 
-def variation(population: np.ndarray) -> None:
-    mutated_population = mutate_population(population, MUTATION_RATE, NUM_MUTATIONS)
-
+def recombination(population: np.ndarray, csv) -> np.ndarray:
     offspring = []
-    for i in range(POP_SIZE):
-        # how to choose 2 parents?,for now it's random # Jordi: we will implement some selective pressure later, for now let's keep it simple
-        p1, p2 = select_2_parents(mutate_population)
-        offspring.append(crossover_parents(p1, p2))
-    return np.concatenate(mutated_population, offspring)
+    # np.random.shuffle(population)
+    for j in range(5):
+        for i in range(POP_SIZE):
+            # p1, p2 = select_2_parents(population, csv)
+            p1 = population[i]
+            p2 = population[random.randint(0, POP_SIZE-1)]
+            offspring.append(ordered_crossover(p1, p2))
+    return np.array(offspring)
 
 
-def eliminate(intermediate_pop: np.ndarray, desired_size: int) -> np.ndarray:
-    p = sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=True)
-    population = []
-    for i in range(POP_SIZE):
-        population.append(p[i])
+def eliminate(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.ndarray:
+    for p in intermediate_pop:
+        calculate_fitness(p, csvdata)
 
-    return np.array(population)
+    # pop = []
+    # for i in range(0, desired_size):
+    #     pop.append(selection_k_tournament(intermediate_pop, csvdata, K_TOURNAMENT))
+    #
+    # return np.array(sorted(pop, key=lambda agent: agent.fitness, reverse=False))
+
+    sorted_pop = np.array(sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=False))
+    return sorted_pop[:desired_size]
 
 
 class group14:
@@ -258,21 +297,55 @@ class group14:
         self.file = filename
         self.CSV.load_distances(self.file)
 
-        # Your code here .
-        yourConvergenceTestsHere = True
+        simtime = 0
+        meanObjective = 0.0
+        bestObjective = 0.0
+        bestSolution = np.array([1, 2, 3, 4, 5])
+        N_GENS = 0
+        N_stuck = 0
+        max_gens = 1000
+        max_stuck = 200
+        lastBest = 0.0
 
         # initialize the population
-        n_city = CSVdata.numcities()
-        population = initialize_population(n_city)
+        n_city = self.CSV.numcities()
+        population = initialize_population(POP_SIZE * 4, n_city)
+        # for p in population:
+        #   calculate_fitness(p, self.CSV)
 
-        while (yourConvergenceTestsHere):
-            meanObjective = 0.0
-            bestObjective = 0.0
-            bestSolution = np.array([1, 2, 3, 4, 5])
+        while (simtime <= TIME_LIMIT):
 
-            population = selection_k_tournament(population, POP_SIZE)
-            intemediate_pop = variation(population)
-            population = eliminate(intemediate_pop, POP_SIZE)
+            # to check one cycle execution time
+            start = time.time()
+
+            # Selection operator
+            population = selection_k_tournament(population, self.CSV, K_TOURNAMENT, POP_SIZE)
+            # Variation operators
+            selected_pop = recombination(population, self.CSV)  # size = POP_SIZE
+            variated_pop = mutate_population(selected_pop, MUTATION_RATE)  # size = 3xPOP_SIZE
+            # Elimination operator
+            population = eliminate(variated_pop, POP_SIZE, self.CSV)  # size = POP_SIZE
+
+            currentBest = population[0].fitness
+
+            fits = 0.0
+            if currentBest < bestObjective or bestObjective == 0.0:
+                bestObjective = currentBest
+                bestSolution = population[0].getcycle()
+
+            for p in population:
+                fits += p.getfitness()
+
+            meanObjective = fits / POP_SIZE
+
+            end = time.time()
+            simtime += end - start
+
+            print('\n' * 2)
+            print('Current best is = ', currentBest)
+            print('Global best is = ', bestObjective)
+            print('mean objective is', meanObjective)
+            print('Best Solution ', bestSolution)
 
             # Call the reporter with :
             # - the mean objective function value of the population
@@ -282,6 +355,30 @@ class group14:
             timeLeft = self.reporter.report(
                 meanObjective, bestObjective, bestSolution)
             if timeLeft < 0:
+                print('Reached time limit')
                 break
-        # Your code here .
+
+            N_GENS += 1
+            if N_GENS > max_gens:
+                print('Reached max gens')
+                break
+
+            if bestObjective != lastBest:
+                N_stuck = 0
+                lastBest = bestObjective
+            else:
+                N_stuck += 1
+            if N_stuck > max_stuck:
+                print('Reached max stuck gens')
+                break
+
         return 0
+
+
+########################################################################################################################
+# Launch the optimization
+
+g = group14()
+g.optimize("./data/tour50.csv")
+
+########################################################################################################################
