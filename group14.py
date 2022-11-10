@@ -7,10 +7,11 @@ import numpy as np
 
 TIME_LIMIT = 5 * 60  # seconds
 K_TOURNAMENT = 5  # Number of candidates in the tournament
-POP_SIZE = 500  # Population size
-MUTATION_RATE = 0.05  # Percent mutation rate 1 = 100%
+POP_SIZE = 400  # Population size
+MUTATION_RATE = 0.10  # Percent mutation rate 1 = 100%
 NUM_MUT = 20  # maximum number of mutations
 MIN_MUT = 1  # minimum number of mutations. best is 1
+
 
 ########################################################################################################################
 
@@ -32,6 +33,7 @@ class Path:
     def getfitness(self):
         return self.fitness
 
+
 ########################################################################################################################
 
 class CSVdata:
@@ -48,6 +50,7 @@ class CSVdata:
 
     def numcities(self) -> int:
         return self.distances.shape[0]
+
 
 ########################################################################################################################
 
@@ -155,7 +158,7 @@ def ordered_crossover(parent1: Path, parent2: Path):
         child_p1.append(parent1.cycle[i])
     child_p2 = [item for item in parent2.cycle if item not in child_p1]
     child = Path()
-    child.setcycle(np.array(child_p1 + child_p2))
+    child.setcycle(np.array(child_p2 + child_p1))
     return child
 
 
@@ -174,10 +177,20 @@ def selection_k_tournament(population: np.ndarray, csvdata, K, popsize) -> np.nd
     return np.array(small_population)  # Return the population
 
 
-# def select_2_parents(pop: np.ndarray, csv):
-#     # parents = random.choices(pop, k=2)  # completely random for now # we can change it later
-#     return selection_k_tournament(pop, csv, K_TOURNAMENT_CROSSOVER), selection_k_tournament(pop, csv, K_TOURNAMENT_CROSSOVER)
-#     # return random.choices(pop, k=2)  # random is OK
+# def select_k_parents(pop: np.ndarray, csv):
+#     p = random.choices(pop, k=5)
+#     for i in p:
+#         calculate_fitness(i)
+#     ps = sorted(p, key=lambda agent: agent.fitness, reverse=False)
+#     p1 = ps[0]
+#
+#     p = random.choices(pop, k=5)
+#     for i in p:
+#         calculate_fitness(i)
+#     ps = sorted(p, key=lambda agent: agent.fitness, reverse=False)
+#     p2 = ps[0]
+#
+#     return p1, p2
 
 
 def recombination(population: np.ndarray, csv) -> np.ndarray:
@@ -185,7 +198,7 @@ def recombination(population: np.ndarray, csv) -> np.ndarray:
     # np.random.shuffle(population)
     for j in range(5):
         for i in range(POP_SIZE):
-            # p1, p2 = select_2_parents(population, csv)
+            # p1, p2 = select_k_parents(population, csv)
             p1 = population[i]
             p2 = population[random.randint(0, POP_SIZE - 1)]
             offspring.append(ordered_crossover(p1, p2))
@@ -202,7 +215,12 @@ def elimination(intermediate_pop: np.ndarray, desired_size: int, csvdata) -> np.
     #
     # return np.array(sorted(pop, key=lambda agent: agent.fitness, reverse=False))
     sorted_pop = np.array(sorted(intermediate_pop, key=lambda agent: agent.fitness, reverse=False))
-    return sorted_pop[:desired_size]
+    # return sorted_pop[0:desired_size]
+
+    # another possibility
+    s = sorted_pop[:int(desired_size / 2)]
+    s2 = random.choices(sorted_pop, k=int(desired_size / 2 + 1))
+    return np.append(s, s2)
 
 
 class group14:
