@@ -6,7 +6,7 @@ import numpy as np
 ########################################################################################################################
 
 TIME_LIMIT = 5 * 60  # seconds
-K_TOURNAMENT = 8  # Number of candidates in the tournament
+K_TOURNAMENT = 16  # Number of candidates in the tournament
 POP_SIZE = 400  # Population size
 MUTATION_RATE = 0.10  # Percent mutation rate 1 = 100%
 NUM_MUT = 20  # maximum number of mutations
